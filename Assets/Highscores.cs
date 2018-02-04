@@ -14,27 +14,40 @@ public class Highscores : MonoBehaviour {
 
 	//array from highscore data structure
 	public Highscore[] highscoresList;
+	//in order to startcoroutine, we create a static instance of void awake
+	static Highscores instance;
+	DisplayHighscores highscoresDisplay;
+
 
 	void Awake() {
-		AddNewHighscore ("Sebastian", 50);
-		AddNewHighscore ("Mary", 85);
-		AddNewHighscore ("Bob", 92);
-	
-		DownloadHighscores ();
+		instance = this;
+		highscoresDisplay = GetComponent<DisplayHighscores> ();
 	}
 
-	public void AddNewHighscore(string username, int score) {
-		StartCoroutine (UploadNewHighscore (username, score));
+
+//	void Awake() {
+//		AddNewHighscore ("Sebastian", 50);
+//		AddNewHighscore ("Mary", 85);
+//		AddNewHighscore ("Bob", 92);
+//	
+//		DownloadHighscores ();
+//	}
+
+	//static because we want to call it easier from other scripts
+	public static void AddNewHighscore(string username, int score) {
+		instance.StartCoroutine (instance.UploadNewHighscore (username, score));
 	}
-	//IEnumerator is some fancy way to declare, I don't understand it and google isn't playing ball.
+	//IEnumerator is some fancy way to declare. I don't understand it and google isn't playing ball.
 	IEnumerator UploadNewHighscore(string username, int score) {
 		//creates the web url for adding your highscore into the table
 		WWW web = new WWW (webURL + privateCode + "/add/" + WWW.EscapeURL (username) + "/" + score);
 		//waits for a return rather than immediately continuing with the code
 		yield return web;
 
-		if (string.IsNullOrEmpty (web.error)) 
+		if (string.IsNullOrEmpty (web.error)) {
 			print ("Upload successful");
+			DownloadHighscores ();
+		}
 		else {
 			print ("Errror uploading: " + web.error);
 		}
@@ -49,9 +62,11 @@ public class Highscores : MonoBehaviour {
 		//waits for a return rather than immediately continuing with the code
 		yield return web;
 
-		if (string.IsNullOrEmpty (web.error)) 
+		if (string.IsNullOrEmpty (web.error)) {
 			//prints the scoreboard
-			FormatHighscores(web.text);
+			FormatHighscores (web.text);
+			highscoresDisplay.OnHighscoresDownloaded (highscoresList);
+		}
 		else {
 			print ("Errror downloading: " + web.error);
 		}
